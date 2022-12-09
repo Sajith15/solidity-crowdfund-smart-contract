@@ -99,4 +99,50 @@ contract Project {
         currentBalance = 0;
         uniqueId = uid;
     }
+
+    /** @dev Function to fund a certain project.
+     */
+    function contribute() external payable inState(State.Fundraising) {
+        require(msg.sender != creator);
+        if (block.timestamp < raiseBy) {
+            contributions[msg.sender] += msg.value;
+            currentBalance += msg.value;
+            emit FundingReceived(msg.sender, msg.value, currentBalance);
+            checkIfFundingCompleteOrExpired();
+        } else {
+            state = State.Expired;
+            emit Expired(state);
+        }
+    }
+
+    /** @dev Function to change the project state depending on conditions.
+     */
+    function checkIfFundingCompleteOrExpired() public {
+        if (currentBalance >= amountGoal) {
+            state = State.Successful;
+        } else if (block.timestamp > raiseBy) {
+            state = State.Expired;
+        }
+        completeAt = block.timestamp;
+    }
+
+    function getDetails()
+        public
+        view
+        returns (
+            address payable projectStarter,
+            uint256 deadline,
+            State currentState,
+            uint256 currentAmount,
+            uint256 goalAmount,
+            string memory uniqueIdentifier
+        )
+    {
+        projectStarter = creator;
+        deadline = raiseBy;
+        currentState = state;
+        currentAmount = currentBalance;
+        goalAmount = amountGoal;
+        uniqueIdentifier = uniqueId;
+    }
 }
