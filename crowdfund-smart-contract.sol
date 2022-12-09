@@ -42,6 +42,49 @@ contract Crowdfunding {
 }
 
 contract Project {
+    // Data structures
+    enum State {
+        Fundraising,
+        Expired,
+        Successful
+    }
+
+    // State variables
+    address payable public feesTaker;
+    address payable public creator;
+    uint256 public amountGoal; // required to reach at least this much, else everyone gets refund
+    uint256 public completeAt;
+    uint256 public currentBalance;
+    uint256 public raiseBy;
+    string public uniqueId;
+    // uint256 public cc =  block.timestamp;
+
+    State public state = State.Fundraising; // initialize on create
+    mapping(address => uint256) public contributions;
+
+    // Event that will be emitted whenever funding will be received
+    event FundingReceived(
+        address contributor,
+        uint256 amount,
+        uint256 currentTotal
+    );
+    // Event that will be emitted whenever the project starter has received the funds
+    event CreatorPaid(address recipient);
+
+    event Expired(State state);
+
+    // Modifier to check current state
+    modifier inState(State _state) {
+        require(state == _state);
+        _;
+    }
+
+    // Modifier to check if the function caller is the project creator
+    modifier isCreator() {
+        require(msg.sender == creator);
+        _;
+    }
+
     constructor(
         address payable projectStarter,
         address payable feeAddress,
@@ -49,5 +92,11 @@ contract Project {
         uint256 goalAmount,
         string memory uid
     ) {
+        creator = projectStarter;
+        feesTaker = feeAddress;
+        amountGoal = goalAmount;
+        raiseBy = fundRaisingDeadline;
+        currentBalance = 0;
+        uniqueId = uid;
     }
 }
