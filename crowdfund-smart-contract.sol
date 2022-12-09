@@ -120,10 +120,33 @@ contract Project {
     function checkIfFundingCompleteOrExpired() public {
         if (currentBalance >= amountGoal) {
             state = State.Successful;
+            payOut();
         } else if (block.timestamp > raiseBy) {
             state = State.Expired;
         }
         completeAt = block.timestamp;
+    }
+
+    /** @dev Function to give the received funds to project starter.
+     */
+    function payOut() internal inState(State.Successful) returns (bool) {
+        uint256 totalRaised = currentBalance;
+
+        uint256 fs = (totalRaised * 95) / 10000;
+        uint256 tam = totalRaised - fs;
+        feesTaker.transfer(fs);
+
+        currentBalance = 0;
+
+        if (creator.send(tam)) {
+            emit CreatorPaid(creator);
+            return true;
+        } else {
+            currentBalance = tam;
+            state = State.Successful;
+        }
+
+        return false;
     }
 
     function getDetails()
