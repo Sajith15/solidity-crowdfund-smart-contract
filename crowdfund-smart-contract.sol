@@ -39,6 +39,13 @@ contract Crowdfunding {
             uniqueId
         );
     }
+
+    /** @dev Function to get all projects' contract addresses.
+     * @return A list of all projects' contract addreses
+     */
+    function returnAllProjects() external view returns (Project[] memory) {
+        return projects;
+    }
 }
 
 contract Project {
@@ -147,6 +154,26 @@ contract Project {
         }
 
         return false;
+    }
+
+    /** @dev Function to retrieve donated amount when a project expires.
+     */
+    function getRefund() public returns (bool) {
+        require(block.timestamp > raiseBy);
+        require(contributions[msg.sender] > 0);
+
+        state = State.Expired;
+
+        uint256 amountToRefund = contributions[msg.sender];
+        contributions[msg.sender] = 0;
+
+        if (!payable(msg.sender).send(amountToRefund)) {
+            contributions[msg.sender] = amountToRefund;
+            return false;
+        } else {
+            currentBalance -= amountToRefund;
+        }
+        return true;
     }
 
     function getDetails()
